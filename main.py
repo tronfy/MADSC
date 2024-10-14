@@ -7,7 +7,7 @@ M = 2**31 - 1
 c = 0
 
 seed = 10
-it = 1_000
+it = 1_000_000
 
 print("a = {}, M = {}, c = {}".format(a, M, c))
 print("seed = {}, {} iterações".format(seed, it))

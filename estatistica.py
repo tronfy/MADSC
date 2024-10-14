@@ -43,7 +43,4 @@ def qui_quadrado(amostra):
     for i in amostra:
         intervalos[int(i * k)] += 1
 
-    # for i in range(k):
-    #     print(f"{i}: {intervalos[i]}")
-
     return sum([((i - (n / k)) ** 2) / (n / k) for i in intervalos])
