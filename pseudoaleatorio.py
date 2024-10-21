@@ -25,12 +25,12 @@ def skip(X, n):
         next(X)
 
 
-def uniforme(start, end, seed=42, a=69621, c=0, M=2**31 - 1):
+def uniforme(start, end, seed=42, mcl_a=69621, mcl_c=0, mcl_M=2**31 - 1):
     """
     Gera números aleatórios uniformemente distribuídos no intervalo [a, b]
     """
 
-    X = mcl(a, seed, c, M)
+    X = mcl(mcl_a, seed, mcl_c, mcl_M)
     skip(X, 2)
 
     while True:
@@ -38,12 +38,12 @@ def uniforme(start, end, seed=42, a=69621, c=0, M=2**31 - 1):
         yield start + (end - start) * x
 
 
-def exponencial(alpha, seed=42, a=69621, c=0, M=2**31 - 1):
+def exponencial(alpha, seed=42, mcl_a=69621, mcl_c=0, mcl_M=2**31 - 1):
     """
     Gera números aleatórios exponencialmente distribuídos
     """
 
-    X = mcl(a, seed, c, M)
+    X = mcl(mcl_a, seed, mcl_c, mcl_M)
     skip(X, 2)
 
     while True:
@@ -51,12 +51,12 @@ def exponencial(alpha, seed=42, a=69621, c=0, M=2**31 - 1):
         yield -math.log(x) / alpha
 
 
-def weibull(alpha, beta, seed=42, a=69621, c=0, M=2**31 - 1):
+def weibull(alpha, beta, seed=42, mcl_a=69621, mcl_c=0, mcl_M=2**31 - 1):
     """
-    Gera números aleatórios Weibull
+    Gera números aleatórios na distribuição de Weibull
     """
 
-    X = mcl(a, seed, c, M)
+    X = mcl(mcl_a, seed, mcl_c, mcl_M)
     skip(X, 2)
 
     while True:
@@ -64,12 +64,12 @@ def weibull(alpha, beta, seed=42, a=69621, c=0, M=2**31 - 1):
         yield beta * (-math.log(x)) ** (1 / alpha)
 
 
-def normal(mu, sigma, seed=42, a=69621, c=0, M=2**31 - 1):
+def normal(mu, sigma, seed=42, mcl_a=69621, mcl_c=0, mcl_M=2**31 - 1):
     """
     Gera números aleatórios normalmente distribuídos
     """
 
-    X = mcl(a, seed, c, M)
+    X = mcl(mcl_a, seed, mcl_c, mcl_M)
     skip(X, 2)
 
     while True:
@@ -79,24 +79,24 @@ def normal(mu, sigma, seed=42, a=69621, c=0, M=2**31 - 1):
         yield mu + sigma * f
 
 
-def erlang(k, alpha, seed=42, a=69621, c=0, M=2**31 - 1):
+def erlang(k, alpha, seed=42, mcl_a=69621, mcl_c=0, mcl_M=2**31 - 1):
     """
     Gera números aleatórios Erlang
     """
 
-    X = mcl(a, seed, c, M)
+    X = mcl(mcl_a, seed, mcl_c, mcl_M)
     skip(X, 2)
 
     while True:
         yield -1 * sum([math.log(next(X)) for _ in range(k)]) / alpha
 
 
-def poisson(lamb, seed=42, a=69621, c=0, M=2**31 - 1):
+def poisson(lamb, seed=42, mcl_a=69621, mcl_c=0, mcl_M=2**31 - 1):
     """
-    Gera números aleatórios Poisson
+    Gera números aleatórios na distribuição de Poisson
     """
 
-    X = mcl(a, seed, c, M)
+    X = mcl(mcl_a, seed, mcl_c, mcl_M)
     skip(X, 2)
 
     B = math.exp(-lamb)
@@ -108,3 +108,15 @@ def poisson(lamb, seed=42, a=69621, c=0, M=2**31 - 1):
             k += 1
             p *= next(X)
         yield k - 1
+
+
+def geometrica(p, seed=42, mcl_a=69621, mcl_c=0, mcl_M=2**31 - 1):
+    """
+    Gera números aleatórios na distribuição geométrica
+    """
+
+    X = mcl(mcl_a, seed, mcl_c, mcl_M)
+    skip(X, 2)
+
+    while True:
+        yield math.floor(math.log(next(X)) / math.log(1 - p))
