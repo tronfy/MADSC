@@ -35,12 +35,17 @@ def coef_correlacao(amostra):
     return covariancia(amostra) / (desvio_padrao(x) * desvio_padrao(y))
 
 
-def qui_quadrado(amostra):
+def normalize(x, start, end):
+    # map x from [start, end] to [0, 1]
+    return (x - start) / (end - start)
+
+
+def qui_quadrado(amostra, start=0, end=1):
     n = len(amostra)
     k = 10
 
     intervalos = [0] * k
     for i in amostra:
-        intervalos[int(i * k)] += 1
+        intervalos[math.ceil(normalize(i, start, end) * k) - 1] += 1
 
     return sum([((i - (n / k)) ** 2) / (n / k) for i in intervalos])
