@@ -1,5 +1,6 @@
 import math
 from pseudoaleatorio import uniforme
+from estatistica import media, desvio_padrao
 
 seed = 57
 NUM_SIMS = 1000
@@ -15,6 +16,7 @@ cliente = {
     "TF": 0,
     "TSis": 0,
     "TOF": 0,
+    "tempo_chegada": 0,
 }
 
 
@@ -48,6 +50,7 @@ def simulacao(seed, tempo_max=TEMPO_MAX):
         cli["tipo"] = tipo
         cli["TEC"] = tec
         cli["TS"] = ts
+        cli["tempo_chegada"] = tempo_total
         clientes.append(cli)
 
     # primeiro cliente
@@ -69,27 +72,49 @@ def simulacao(seed, tempo_max=TEMPO_MAX):
         c["TSis"] = c["TFS"] - c["TCR"]
         c["TOF"] = c["TIS"] - prev["TFS"]
 
-    ts_avg = sum(c["TS"] for c in clientes) / len(clientes)
-    tf_avg = sum(c["TF"] for c in clientes) / len(clientes)
-    tsis_avg = sum(c["TSis"] for c in clientes) / len(clientes)
-    tof_avg = sum(c["TOF"] for c in clientes) / len(clientes)
+    ts_med = sum(c["TS"] for c in clientes) / len(clientes)
+    tf_med = sum(c["TF"] for c in clientes) / len(clientes)
+    tsis_med = sum(c["TSis"] for c in clientes) / len(clientes)
+    tof_med = sum(c["TOF"] for c in clientes) / len(clientes)
 
-    return clientes, (ts_avg, tf_avg, tsis_avg, tof_avg)
+    return clientes, (ts_med, tf_med, tsis_med, tof_med)
 
 
 if __name__ == "__main__":
     U = uniforme(0, 1, seed)
     sims = [simulacao(int(next(U) * 9999) + 1) for _ in range(NUM_SIMS)]
 
-    ts_avg = sum(ts_avg for _, (ts_avg, _, _, _) in sims) / NUM_SIMS
-    tf_avg = sum(tf_avg for _, (_, tf_avg, _, _) in sims) / NUM_SIMS
-    tsis_avg = sum(tsis_avg for _, (_, _, tsis_avg, _) in sims) / NUM_SIMS
-    tof_avg = sum(tof_avg for _, (_, _, _, tof_avg) in sims) / NUM_SIMS
+    print("{} simulações, tempo max {}:".format(NUM_SIMS, TEMPO_MAX))
+    print("{:>7} {:>8} | {:>8} | {:>8} | {:>8}".format(" ", "TS", "TF", "TSis", "TOF"))
 
-    print("médias para {} simulações, tempo max {}:".format(NUM_SIMS, TEMPO_MAX))
-    print("{:>8} | {:>8} | {:>8} | {:>8}".format("TS", "TF", "TSis", "TOF"))
+    ts_med = media([ts_med for _, (ts_med, _, _, _) in sims])
+    tf_med = media([tf_med for _, (_, tf_med, _, _) in sims])
+    tsis_med = media([tsis_med for _, (_, _, tsis_med, _) in sims])
+    tof_med = media([tof_med for _, (_, _, _, tof_med) in sims])
     print(
-        "{:>8.2f} | {:>8.2f} | {:>8.2f} | {:>8.2f}".format(
-            ts_avg, tf_avg, tsis_avg, tof_avg
+        "{:<7} {:>8.2f} | {:>8.2f} | {:>8.2f} | {:>8.2f}".format(
+            "média:", ts_med, tf_med, tsis_med, tof_med
+        )
+    )
+
+    ts_dp = desvio_padrao([ts_med for _, (ts_med, _, _, _) in sims])
+    tf_dp = desvio_padrao([tf_med for _, (_, tf_med, _, _) in sims])
+    tsis_dp = desvio_padrao([tsis_med for _, (_, _, tsis_med, _) in sims])
+    tof_dp = desvio_padrao([tof_med for _, (_, _, _, tof_med) in sims])
+    print(
+        "{:<7} {:>8.2f} | {:>8.2f} | {:>8.2f} | {:>8.2f}".format(
+            "desvio:", ts_dp, tf_dp, tsis_dp, tof_dp
+        )
+    )
+
+    # intervalo de confiança
+    t = 1.96  # 95% de confiança
+    ts_ic = t * ts_dp / math.sqrt(NUM_SIMS)
+    tf_ic = t * tf_dp / math.sqrt(NUM_SIMS)
+    tsis_ic = t * tsis_dp / math.sqrt(NUM_SIMS)
+    tof_ic = t * tof_dp / math.sqrt(NUM_SIMS)
+    print(
+        "{:<7} {:>8.2f} | {:>8.2f} | {:>8.2f} | {:>8.2f}".format(
+            "IC:", ts_ic, tf_ic, tsis_ic, tof_ic
         )
     )
