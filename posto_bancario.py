@@ -1,90 +1,122 @@
 import math
+from tqdm import tqdm
 from pseudoaleatorio import uniforme
 from estatistica import media, desvio_padrao
 
-seed = 57
+SEED = 57
+NUM_CAIXAS = 4
 NUM_SIMS = 1000
-TEMPO_MAX = 1800
+TEMPO_MAX = 18000  # 10h às 15h
 
 cliente = {
-    "tipo": 0,
-    "TEC": 0,
-    "TS": 0,
-    "TCR": 0,
-    "TIS": 0,
-    "TFS": 0,
-    "TF": 0,
-    "TSis": 0,
-    "TOF": 0,
-    "tempo_chegada": 0,
+    "id": -1,
+    "tipo": -1,
+    "TEC": -1,
+    "TS": -1,
+    "TCR": -1,
+    "TIS": -1,
+    "TFS": -1,
+    "TF": -1,
+    "TSis": -1,
 }
 
 
 def simulacao(seed, tempo_max=TEMPO_MAX):
     U = uniforme(0, 1, seed)
     clientes = []
+
+    fila = []
+    em_atendimento = []
+    atendidos = []
+
+    tof = 0
+
+    t = 0
+    caixas_livres = NUM_CAIXAS
+
+    # gerar clientes
     tempo_total = 0
     while True:
-        a, b, c = next(U), next(U), next(U)
+        a, b, id = next(U), next(U), next(U)
 
         if 0 <= a <= 0.6:
             tipo = 1
-            ts = -15 * math.log(c) + 15
+            ts = -15 * math.log(id) + 15
         elif 0.6 < a <= 0.9:
             tipo = 2
-            ts = -40 * math.log(c) + 30
+            ts = -40 * math.log(id) + 30
         else:
             tipo = 3
-            ts = -140 * math.log(c) + 60
+            ts = -140 * math.log(id) + 60
 
         tec = -15 * math.log(b)
 
-        tec = round(tec, 2)
-        ts = round(ts, 2)
+        # tec = round(tec, 2)
+        tec = round(tec)
+        # ts = round(ts, 2)
+        ts = round(ts)
 
         tempo_total += tec
         if tempo_total > tempo_max:
             break
 
         cli = cliente.copy()
+        cli["id"] = len(clientes)
         cli["tipo"] = tipo
         cli["TEC"] = tec
         cli["TS"] = ts
-        cli["tempo_chegada"] = tempo_total
+        cli["TCR"] = tempo_total
         clientes.append(cli)
 
-    # primeiro cliente
-    clientes[0]["TCR"] = clientes[0]["TEC"]
-    clientes[0]["TIS"] = clientes[0]["TCR"]
-    clientes[0]["TFS"] = clientes[0]["TIS"] + clientes[0]["TS"]
-    clientes[0]["TF"] = 0
-    clientes[0]["TSis"] = clientes[0]["TS"]
-    clientes[0]["TOF"] = clientes[0]["TCR"]
+    while True:
+        # clientes que chegaram no ultimo segundo
+        chegaram = [c["id"] for c in clientes if t - 1 < c["TCR"] and c["TCR"] <= t]
+        fila.extend(chegaram)
 
-    for i in range(1, len(clientes)):
-        prev = clientes[i - 1]
-        c = clientes[i]
+        # clientes esperando na fila
+        for id in fila:
+            c = clientes[id]
+            c["TF"] += 1
+            if caixas_livres > 0:
+                # mover para em atendimento
+                em_atendimento.append(id)
+                fila = list(filter(lambda x: x != id, fila))
+                caixas_livres -= 1
+                c["TIS"] = t
+                c["TFS"] = t + c["TS"]
 
-        c["TCR"] = c["TEC"] + prev["TCR"]
-        c["TIS"] = max(c["TCR"], prev["TFS"])
-        c["TFS"] = c["TIS"] + c["TS"]
-        c["TF"] = c["TIS"] - c["TCR"]
-        c["TSis"] = c["TFS"] - c["TCR"]
-        c["TOF"] = c["TIS"] - prev["TFS"]
+        tof += caixas_livres
+
+        # clientes em atendimento
+        for id in em_atendimento:
+            c = clientes[id]
+            if c["TFS"] == t:
+                c["TSis"] = c["TS"] + c["TF"]
+                caixas_livres += 1
+                # mover para atendidos
+                atendidos.append(id)
+                em_atendimento = list(filter(lambda x: x != id, em_atendimento))
+
+        t += 1
+        if len(atendidos) == len(clientes):
+            break
 
     ts_med = sum(c["TS"] for c in clientes) / len(clientes)
     tf_med = sum(c["TF"] for c in clientes) / len(clientes)
     tsis_med = sum(c["TSis"] for c in clientes) / len(clientes)
-    tof_med = sum(c["TOF"] for c in clientes) / len(clientes)
 
-    return clientes, (ts_med, tf_med, tsis_med, tof_med)
+    return clientes, (ts_med, tf_med, tsis_med, tof)
 
 
 if __name__ == "__main__":
-    U = uniforme(0, 1, seed)
-    sims = [simulacao(int(next(U) * 9999) + 1) for _ in range(NUM_SIMS)]
+    U = uniforme(0, 1, SEED)
+    sims = [simulacao(int(next(U) * 9999) + 1) for _ in tqdm(range(NUM_SIMS))]
 
-    print("{} simulações, tempo max {}:".format(NUM_SIMS, TEMPO_MAX))
+    print(
+        "{} caixas, {} simulações, tempo max {}:".format(
+            NUM_CAIXAS, NUM_SIMS, TEMPO_MAX
+        )
+    )
     print("{:>7} {:>8} | {:>8} | {:>8} | {:>8}".format(" ", "TS", "TF", "TSis", "TOF"))
 
     ts_med = media([ts_med for _, (ts_med, _, _, _) in sims])
