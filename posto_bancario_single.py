@@ -1,12 +1,8 @@
 from posto_bancario import simulacao
-from estatistica import media, desvio_padrao
+from estatistica import media, desvio_padrao, time_format
 
 
 clientes, (_, _, _, tof) = simulacao(seed=42)
-
-
-def time_format(seconds):
-    return "({}m{}s)".format(int(seconds / 60), int(seconds % 60))
 
 
 header = "{:<4} | {} | {:<8} | {:<20} | {:<8} | {:<8} | {:<8} | {:<8} | {:<18} | {:<8}".format(

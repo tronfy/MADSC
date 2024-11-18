@@ -1,8 +1,9 @@
 import math
-from tqdm import tqdm
-from pseudoaleatorio import uniforme
-from estatistica import media, desvio_padrao
+from tqdm.contrib.concurrent import process_map
 from enum import Enum
+
+from pseudoaleatorio import uniforme
+from estatistica import media, desvio_padrao, time_format
 
 SEED = 57
 NUM_CAIXAS = 4
@@ -35,13 +36,6 @@ def simulacao(seed, tempo_max=TEMPO_MAX):
     U = uniforme(0, 1, seed)
     clientes: list[Cliente] = []
 
-    atendidos = 0
-
-    tof = 0
-
-    t = 0
-    caixas_livres = NUM_CAIXAS
-
     # gerar clientes
     tempo_total = 0
     while True:
@@ -69,6 +63,11 @@ def simulacao(seed, tempo_max=TEMPO_MAX):
         cli = Cliente(len(clientes), tipo, tec, ts, tempo_total)
         clientes.append(cli)
 
+    # simular
+    t = 0
+    caixas_livres = NUM_CAIXAS
+    tof = 0
+    atendidos = 0
     while True:
         for i in range(len(clientes)):
             if clientes[i].status == Status.NULO:
@@ -110,22 +109,30 @@ def simulacao(seed, tempo_max=TEMPO_MAX):
 
 if __name__ == "__main__":
     U = uniforme(0, 1, SEED)
-    sims = [simulacao(int(next(U) * 9999) + 1) for _ in tqdm(range(NUM_SIMS))]
+    # sims = [simulacao(int(next(U) * 9999) + 1) for _ in tqdm(range(NUM_SIMS))]
+    sims = process_map(
+        simulacao,
+        [int(next(U) * 9999) + 1 for _ in range(NUM_SIMS)],
+    )
 
     print(
         "{} caixas, {} simulações, tempo max {}:".format(
             NUM_CAIXAS, NUM_SIMS, TEMPO_MAX
         )
     )
-    print("{:>7} {:>8} | {:>8} | {:>8} | {:>8}".format(" ", "TS", "TF", "TSis", "TOF"))
+    print(
+        "{:>7} {:>8} | {:>8} | {:>8} {:<9} | {:>8}".format(
+            " ", "TS", "TF", "TSis", "", "TOF"
+        )
+    )
 
     ts_med = media([ts_med for _, (ts_med, _, _, _) in sims])
     tf_med = media([tf_med for _, (_, tf_med, _, _) in sims])
     tsis_med = media([tsis_med for _, (_, _, tsis_med, _) in sims])
     tof_med = media([tof_med for _, (_, _, _, tof_med) in sims])
     print(
-        "{:<7} {:>8.2f} | {:>8.2f} | {:>8.2f} | {:>8.2f}".format(
-            "média:", ts_med, tf_med, tsis_med, tof_med
+        "{:<7} {:>8.2f} | {:>8.2f} | {:>8.2f} {:<9} | {:>8.2f}".format(
+            "média:", ts_med, tf_med, tsis_med, time_format(tsis_med), tof_med
         )
     )
 
@@ -134,8 +141,8 @@ if __name__ == "__main__":
     tsis_dp = desvio_padrao([tsis_med for _, (_, _, tsis_med, _) in sims])
     tof_dp = desvio_padrao([tof_med for _, (_, _, _, tof_med) in sims])
     print(
-        "{:<7} {:>8.2f} | {:>8.2f} | {:>8.2f} | {:>8.2f}".format(
-            "desvio:", ts_dp, tf_dp, tsis_dp, tof_dp
+        "{:<7} {:>8.2f} | {:>8.2f} | {:>8.2f} {:<9} | {:>8.2f}".format(
+            "desvio:", ts_dp, tf_dp, tsis_dp, time_format(tsis_dp), tof_dp
         )
     )
 
@@ -146,7 +153,7 @@ if __name__ == "__main__":
     tsis_ic = t * tsis_dp / math.sqrt(NUM_SIMS)
     tof_ic = t * tof_dp / math.sqrt(NUM_SIMS)
     print(
-        "{:<7} {:>8.2f} | {:>8.2f} | {:>8.2f} | {:>8.2f}".format(
-            "IC:", ts_ic, tf_ic, tsis_ic, tof_ic
+        "{:<7} {:>8.2f} | {:>8.2f} | {:>8.2f} {:<9} | {:>8.2f}".format(
+            "IC:", ts_ic, tf_ic, tsis_ic, "", tof_ic
         )
     )

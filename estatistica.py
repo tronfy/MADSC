@@ -49,3 +49,7 @@ def qui_quadrado(amostra, start=0, end=1):
         intervalos[math.ceil(normalize(i, start, end) * k) - 1] += 1
 
     return sum([((i - (n / k)) ** 2) / (n / k) for i in intervalos])
+
+
+def time_format(seconds):
+    return "({}m{}s)".format(int(seconds / 60), int(seconds % 60))
