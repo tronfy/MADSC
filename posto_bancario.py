@@ -2,32 +2,40 @@ import math
 from tqdm import tqdm
 from pseudoaleatorio import uniforme
 from estatistica import media, desvio_padrao
+from enum import Enum
 
 SEED = 57
 NUM_CAIXAS = 4
 NUM_SIMS = 1000
 TEMPO_MAX = 18000  # 10h às 15h
 
-cliente = {
-    "id": -1,
-    "tipo": -1,
-    "TEC": -1,
-    "TS": -1,
-    "TCR": -1,
-    "TIS": -1,
-    "TFS": -1,
-    "TF": -1,
-    "TSis": -1,
-}
+
+class Status(Enum):
+    NULO = -1
+    FILA = 0
+    ATENDIMENTO = 1
+    ATENDIDO = 2
+
+
+class Cliente:
+    def __init__(self, id: int, tipo: int, tec: int, ts: int, tcr: int):
+        self.id = id
+        self.tipo = tipo
+        self.tec = tec
+        self.ts = ts
+        self.tcr = tcr
+        self.tis = -1
+        self.tfs = -1
+        self.tf = -1
+        self.tsis = -1
+        self.status = Status.NULO
 
 
 def simulacao(seed, tempo_max=TEMPO_MAX):
     U = uniforme(0, 1, seed)
-    clientes = []
+    clientes: list[Cliente] = []
 
-    fila = []
-    em_atendimento = []
-    atendidos = []
+    atendidos = 0
 
     tof = 0
 
@@ -51,59 +59,51 @@ def simulacao(seed, tempo_max=TEMPO_MAX):
 
         tec = -15 * math.log(b)
 
-        # tec = round(tec, 2)
         tec = round(tec)
-        # ts = round(ts, 2)
         ts = round(ts)
 
         tempo_total += tec
         if tempo_total > tempo_max:
             break
 
-        cli = cliente.copy()
-        cli["id"] = len(clientes)
-        cli["tipo"] = tipo
-        cli["TEC"] = tec
-        cli["TS"] = ts
-        cli["TCR"] = tempo_total
+        cli = Cliente(len(clientes), tipo, tec, ts, tempo_total)
         clientes.append(cli)
 
     while True:
-        # clientes que chegaram no ultimo segundo
-        chegaram = [c["id"] for c in clientes if t - 1 < c["TCR"] and c["TCR"] <= t]
-        fila.extend(chegaram)
+        for i in range(len(clientes)):
+            if clientes[i].status == Status.NULO:
+                # se o cliente chegou no segundo atual, entra na fila
+                if t - 1 < clientes[i].tcr and clientes[i].tcr <= t:
+                    clientes[i].status = Status.FILA
 
         # clientes esperando na fila
-        for id in fila:
-            c = clientes[id]
-            c["TF"] += 1
-            if caixas_livres > 0:
-                # mover para em atendimento
-                em_atendimento.append(id)
-                fila = list(filter(lambda x: x != id, fila))
-                caixas_livres -= 1
-                c["TIS"] = t
-                c["TFS"] = t + c["TS"]
+        for i in range(len(clientes)):
+            if clientes[i].status == Status.FILA:
+                clientes[i].tf += 1
+                if caixas_livres > 0:
+                    clientes[i].status = Status.ATENDIMENTO
+                    caixas_livres -= 1
+                    clientes[i].tis = t
+                    clientes[i].tfs = t + clientes[i].ts
 
         tof += caixas_livres
 
         # clientes em atendimento
-        for id in em_atendimento:
-            c = clientes[id]
-            if c["TFS"] == t:
-                c["TSis"] = c["TS"] + c["TF"]
-                caixas_livres += 1
-                # mover para atendidos
-                atendidos.append(id)
-                em_atendimento = list(filter(lambda x: x != id, em_atendimento))
+        for i in range(len(clientes)):
+            if clientes[i].status == Status.ATENDIMENTO:
+                if clientes[i].tfs == t:
+                    clientes[i].tsis = clientes[i].ts + clientes[i].tf
+                    caixas_livres += 1
+                    clientes[i].status = Status.ATENDIDO
+                    atendidos += 1
 
         t += 1
-        if len(atendidos) == len(clientes):
+        if atendidos == len(clientes):
             break
 
-    ts_med = sum(c["TS"] for c in clientes) / len(clientes)
-    tf_med = sum(c["TF"] for c in clientes) / len(clientes)
-    tsis_med = sum(c["TSis"] for c in clientes) / len(clientes)
+    ts_med = media([c.ts for c in clientes])
+    tf_med = media([c.tf for c in clientes])
+    tsis_med = media([c.tsis for c in clientes])
 
     return clientes, (ts_med, tf_med, tsis_med, tof)
 
