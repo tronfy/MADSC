@@ -1,6 +1,5 @@
 import math
 from tqdm.contrib.concurrent import process_map
-from enum import Enum
 
 from pseudoaleatorio import uniforme
 from estatistica import media, desvio_padrao, time_format
@@ -11,16 +10,8 @@ NUM_SIMS = 1000
 TEMPO_MAX = 18000  # 10h às 15h
 
 
-class Status(Enum):
-    NULO = -1
-    FILA = 0
-    ATENDIMENTO = 1
-    ATENDIDO = 2
-
-
 class Cliente:
-    def __init__(self, id: int, tipo: int, tec: int, ts: int, tcr: int):
-        self.id = id
+    def __init__(self, tipo: int, tec: int, ts: int, tcr: int):
         self.tipo = tipo
         self.tec = tec
         self.ts = ts
@@ -29,12 +20,15 @@ class Cliente:
         self.tfs = -1
         self.tf = -1
         self.tsis = -1
-        self.status = Status.NULO
 
 
 def simulacao(seed, tempo_max=TEMPO_MAX):
     U = uniforme(0, 1, seed)
     clientes: list[Cliente] = []
+
+    chegando: list[int] = []
+    fila: list[int] = []
+    em_atendimento: list[int] = []
 
     # gerar clientes
     tempo_total = 0
@@ -60,8 +54,9 @@ def simulacao(seed, tempo_max=TEMPO_MAX):
         if tempo_total > tempo_max:
             break
 
-        cli = Cliente(len(clientes), tipo, tec, ts, tempo_total)
+        cli = Cliente(tipo, tec, ts, tempo_total)
         clientes.append(cli)
+        chegando.append(len(clientes) - 1)
 
     # simular
     t = 0
@@ -69,32 +64,41 @@ def simulacao(seed, tempo_max=TEMPO_MAX):
     tof = 0
     atendidos = 0
     while True:
-        for i in range(len(clientes)):
-            if clientes[i].status == Status.NULO:
-                # se o cliente chegou no segundo atual, entra na fila
-                if t - 1 < clientes[i].tcr and clientes[i].tcr <= t:
-                    clientes[i].status = Status.FILA
+        indo_para_fila = []
+        for id in chegando:
+            # se o cliente chegou no segundo atual, entra na fila
+            if t - 1 < clientes[id].tcr and clientes[id].tcr <= t:
+                indo_para_fila.append(id)
+        for id in indo_para_fila:
+            chegando.remove(id)
+            fila.append(id)
 
         # clientes esperando na fila
-        for i in range(len(clientes)):
-            if clientes[i].status == Status.FILA:
-                clientes[i].tf += 1
-                if caixas_livres > 0:
-                    clientes[i].status = Status.ATENDIMENTO
-                    caixas_livres -= 1
-                    clientes[i].tis = t
-                    clientes[i].tfs = t + clientes[i].ts
+        indo_para_atendimento = []
+        for id in fila:
+            clientes[id].tf += 1
+            if caixas_livres > 0:
+                caixas_livres -= 1
+                clientes[id].tis = t
+                clientes[id].tfs = t + clientes[id].ts
+                indo_para_atendimento.append(id)
+        for id in indo_para_atendimento:
+            fila.remove(id)
+            em_atendimento.append(id)
 
         tof += caixas_livres
 
         # clientes em atendimento
-        for i in range(len(clientes)):
-            if clientes[i].status == Status.ATENDIMENTO:
-                if clientes[i].tfs == t:
-                    clientes[i].tsis = clientes[i].ts + clientes[i].tf
+        foram_atendidos = []
+        for id in em_atendimento:
+            if clientes[id].tis >= 0 and clientes[id].tsis < 0:
+                if clientes[id].tfs == t:
+                    clientes[id].tsis = clientes[id].ts + clientes[id].tf
                     caixas_livres += 1
-                    clientes[i].status = Status.ATENDIDO
                     atendidos += 1
+                    foram_atendidos.append(id)
+        for id in foram_atendidos:
+            em_atendimento.remove(id)
 
         t += 1
         if atendidos == len(clientes):
@@ -109,6 +113,7 @@ def simulacao(seed, tempo_max=TEMPO_MAX):
 
 if __name__ == "__main__":
     U = uniforme(0, 1, SEED)
+
     # sims = [simulacao(int(next(U) * 9999) + 1) for _ in tqdm(range(NUM_SIMS))]
     sims = process_map(
         simulacao,

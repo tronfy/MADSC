@@ -14,22 +14,25 @@ for i, c in enumerate(clientes):
     print(
         "{:>4} | {} | {:>8} | {:>8} {:<11} | {:>8} | {:>8} | {:>8} | {:>8} | {:>8} {:<9}".format(
             i + 1,
-            c["tipo"],
-            c["TEC"],
-            c["TCR"],
-            time_format(c["TCR"]),
-            c["TS"],
-            c["TIS"],
-            c["TFS"],
-            c["TF"],
-            c["TSis"],
-            time_format(c["TSis"]),
+            c.tipo,
+            c.tec,
+            c.tcr,
+            time_format(c.tcr),
+            c.ts,
+            c.tis,
+            c.tfs,
+            c.tf,
+            c.tsis,
+            time_format(c.tsis),
         )
     )
 
-ts_med = media([c["TS"] for c in clientes])
-tf_med = media([c["TF"] for c in clientes])
-tsis_med = media([c["TSis"] for c in clientes])
+print("-" * len(header))
+print(header)
+
+ts_med = media([c.ts for c in clientes])
+tf_med = media([c.tf for c in clientes])
+tsis_med = media([c.tsis for c in clientes])
 
 print("-" * len(header))
 print(
@@ -38,9 +41,9 @@ print(
     )
 )
 
-ts_dp = desvio_padrao([c["TS"] for c in clientes])
-tf_dp = desvio_padrao([c["TF"] for c in clientes])
-tsis_dp = desvio_padrao([c["TSis"] for c in clientes])
+ts_dp = desvio_padrao([c.ts for c in clientes])
+tf_dp = desvio_padrao([c.tf for c in clientes])
+tsis_dp = desvio_padrao([c.tsis for c in clientes])
 
 print(
     "desvios: {:<35} {:>8.2f} {:<23} {:>8.2f}   {:>8.2f} {:<9}".format(
