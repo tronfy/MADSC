@@ -2,7 +2,7 @@ import math
 from tqdm.contrib.concurrent import process_map
 
 from pseudoaleatorio import uniforme
-from estatistica import media, desvio_padrao, time_format
+from utils import media, desvio_padrao, time_format
 
 SEED = 57
 NUM_CAIXAS = 4
@@ -22,7 +22,7 @@ class Cliente:
         self.tsis = -1
 
 
-def simulacao(seed, tempo_max=TEMPO_MAX):
+def simular(seed, tempo_max=TEMPO_MAX):
     U = uniforme(0, 1, seed)
     clientes: list[Cliente] = []
 
@@ -67,23 +67,20 @@ def simulacao(seed, tempo_max=TEMPO_MAX):
         indo_para_fila = []
         for id in chegando:
             # se o cliente chegou no segundo atual, entra na fila
-            if t - 1 < clientes[id].tcr and clientes[id].tcr <= t:
+            if t - 1 < clientes[id].tcr <= t:
                 indo_para_fila.append(id)
         for id in indo_para_fila:
             chegando.remove(id)
             fila.append(id)
 
         # clientes esperando na fila
-        indo_para_atendimento = []
         for id in fila:
             clientes[id].tf += 1
-            if caixas_livres > 0:
-                caixas_livres -= 1
-                clientes[id].tis = t
-                clientes[id].tfs = t + clientes[id].ts
-                indo_para_atendimento.append(id)
-        for id in indo_para_atendimento:
-            fila.remove(id)
+        while caixas_livres > 0 and fila:
+            id = fila.pop(0)
+            caixas_livres -= 1
+            clientes[id].tis = t
+            clientes[id].tfs = t + clientes[id].ts
             em_atendimento.append(id)
 
         tof += caixas_livres
@@ -116,7 +113,7 @@ if __name__ == "__main__":
 
     # sims = [simulacao(int(next(U) * 9999) + 1) for _ in tqdm(range(NUM_SIMS))]
     sims = process_map(
-        simulacao,
+        simular,
         [int(next(U) * 9999) + 1 for _ in range(NUM_SIMS)],
     )
 

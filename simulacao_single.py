@@ -1,8 +1,8 @@
-from posto_bancario import simulacao
-from estatistica import media, desvio_padrao, time_format
+from simulacao import simular
+from utils import media, desvio_padrao, time_format
 
 
-clientes, (_, _, _, tof) = simulacao(seed=42)
+clientes, (_, _, _, tof) = simular(seed=42)
 
 
 header = "{:<4} | {} | {:<8} | {:<20} | {:<8} | {:<8} | {:<8} | {:<8} | {:<18} | {:<8}".format(
