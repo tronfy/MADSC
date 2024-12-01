@@ -23,6 +23,7 @@ class Cliente:
 
 
 def simular(seed, tempo_max=TEMPO_MAX):
+    # gerador de números aleatórios para esta simulação
     U = uniforme(0, 1, seed)
     clientes: list[Cliente] = []
 
@@ -30,27 +31,33 @@ def simular(seed, tempo_max=TEMPO_MAX):
     fila: list[int] = []
     em_atendimento: list[int] = []
 
-    # gerar clientes
+    # == gerar clientes ==
+
     tempo_total = 0
     while True:
-        a, b, id = next(U), next(U), next(U)
+        # a determina o tipo de cliente
+        # b determina o tempo entre chegadas
+        # c determina o tempo de serviço
+        a, b, c = next(U), next(U), next(U)
 
-        if 0 <= a <= 0.6:
+        if 0 <= a <= 0.6:  # 60% de chance de ser tipo 1
             tipo = 1
-            ts = -15 * math.log(id) + 15
-        elif 0.6 < a <= 0.9:
+            ts = -15 * math.log(c) + 15
+        elif 0.6 < a <= 0.9:  # 30% de chance de ser tipo 2
             tipo = 2
-            ts = -40 * math.log(id) + 30
-        else:
+            ts = -40 * math.log(c) + 30
+        else:  # 10% de chance de ser tipo 3
             tipo = 3
-            ts = -140 * math.log(id) + 60
+            ts = -140 * math.log(c) + 60
 
         tec = -15 * math.log(b)
 
+        # arredonda TEC e TS, pois trabalhamos com segundos inteiros
         tec = round(tec)
         ts = round(ts)
 
         tempo_total += tec
+        # se o cliente chegaria depois do tempo máximo, para de gerar
         if tempo_total > tempo_max:
             break
 
@@ -58,48 +65,55 @@ def simular(seed, tempo_max=TEMPO_MAX):
         clientes.append(cli)
         chegando.append(len(clientes) - 1)
 
-    # simular
+    # == simular ==
+
     t = 0
     caixas_livres = NUM_CAIXAS
     tof = 0
     atendidos = 0
     while True:
         indo_para_fila = []
-        for id in chegando:
+        for c in chegando:
             # se o cliente chegou no segundo atual, entra na fila
-            if t - 1 < clientes[id].tcr <= t:
-                indo_para_fila.append(id)
-        for id in indo_para_fila:
-            chegando.remove(id)
-            fila.append(id)
+            if t - 1 < clientes[c].tcr <= t:
+                indo_para_fila.append(c)
+        for c in indo_para_fila:
+            chegando.remove(c)
+            fila.append(c)
 
         # clientes esperando na fila
-        for id in fila:
-            clientes[id].tf += 1
+        for c in fila:
+            clientes[c].tf += 1
         while caixas_livres > 0 and fila:
-            id = fila.pop(0)
+            # se há ao menos um caixa livre e alguém na fila, atende
+            c = fila.pop(0)
             caixas_livres -= 1
-            clientes[id].tis = t
-            clientes[id].tfs = t + clientes[id].ts
-            em_atendimento.append(id)
+            clientes[c].tis = t
+            clientes[c].tfs = t + clientes[c].ts
+            em_atendimento.append(c)
 
+        # conta um segundo ocioso para cada caixa livre
         tof += caixas_livres
 
         # clientes em atendimento
         foram_atendidos = []
-        for id in em_atendimento:
-            if clientes[id].tis >= 0 and clientes[id].tsis < 0:
-                if clientes[id].tfs == t:
-                    clientes[id].tsis = clientes[id].ts + clientes[id].tf
+        for c in em_atendimento:
+            if clientes[c].tis >= 0 and clientes[c].tsis < 0:
+                if clientes[c].tfs == t:
+                    # se o atendimento acabou, libera o caixa
+                    clientes[c].tsis = clientes[c].ts + clientes[c].tf
                     caixas_livres += 1
                     atendidos += 1
-                    foram_atendidos.append(id)
-        for id in foram_atendidos:
-            em_atendimento.remove(id)
+                    foram_atendidos.append(c)
+        for c in foram_atendidos:
+            em_atendimento.remove(c)
 
         t += 1
         if atendidos == len(clientes):
+            # todos os clientes foram atendidos, fim da simulação
             break
+
+    # == resultados ==
 
     ts_med = media([c.ts for c in clientes])
     tf_med = media([c.tf for c in clientes])
@@ -109,13 +123,16 @@ def simular(seed, tempo_max=TEMPO_MAX):
 
 
 if __name__ == "__main__":
+    # gerador de números aleatórios para gerar as seeds das simulações individuais
     U = uniforme(0, 1, SEED)
 
-    # sims = [simulacao(int(next(U) * 9999) + 1) for _ in tqdm(range(NUM_SIMS))]
+    # executa NUM_SIMS simulações em paralelo
     sims = process_map(
         simular,
         [int(next(U) * 9999) + 1 for _ in range(NUM_SIMS)],
     )
+
+    # == exibe resultados ==
 
     print(
         "{} caixas, {} simulações, tempo max {}:".format(
@@ -128,6 +145,7 @@ if __name__ == "__main__":
         )
     )
 
+    # média
     ts_med = media([ts_med for _, (ts_med, _, _, _) in sims])
     tf_med = media([tf_med for _, (_, tf_med, _, _) in sims])
     tsis_med = media([tsis_med for _, (_, _, tsis_med, _) in sims])
@@ -138,6 +156,7 @@ if __name__ == "__main__":
         )
     )
 
+    # desvio padrão
     ts_dp = desvio_padrao([ts_med for _, (ts_med, _, _, _) in sims])
     tf_dp = desvio_padrao([tf_med for _, (_, tf_med, _, _) in sims])
     tsis_dp = desvio_padrao([tsis_med for _, (_, _, tsis_med, _) in sims])

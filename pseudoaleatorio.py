@@ -31,7 +31,7 @@ def uniforme(start, end, seed=42, mcl_a=69621, mcl_c=0, mcl_M=2**31 - 1):
     """
 
     X = mcl(mcl_a, seed, mcl_c, mcl_M)
-    skip(X, 2)
+    skip(X, 2)  # ignora os dois primeiros valores
 
     while True:
         x = next(X)
@@ -44,7 +44,7 @@ def exponencial(alpha, seed=42, mcl_a=69621, mcl_c=0, mcl_M=2**31 - 1):
     """
 
     X = mcl(mcl_a, seed, mcl_c, mcl_M)
-    skip(X, 2)
+    skip(X, 2)  # ignora os dois primeiros valores
 
     while True:
         x = next(X)
@@ -57,7 +57,7 @@ def weibull(alpha, beta, seed=42, mcl_a=69621, mcl_c=0, mcl_M=2**31 - 1):
     """
 
     X = mcl(mcl_a, seed, mcl_c, mcl_M)
-    skip(X, 2)
+    skip(X, 2)  # ignora os dois primeiros valores
 
     while True:
         x = next(X)
@@ -70,7 +70,7 @@ def normal(mu, sigma, seed=42, mcl_a=69621, mcl_c=0, mcl_M=2**31 - 1):
     """
 
     X = mcl(mcl_a, seed, mcl_c, mcl_M)
-    skip(X, 2)
+    skip(X, 2)  # ignora os dois primeiros valores
 
     while True:
         x = next(X)
@@ -85,7 +85,7 @@ def erlang(k, alpha, seed=42, mcl_a=69621, mcl_c=0, mcl_M=2**31 - 1):
     """
 
     X = mcl(mcl_a, seed, mcl_c, mcl_M)
-    skip(X, 2)
+    skip(X, 2)  # ignora os dois primeiros valores
 
     while True:
         yield -1 * sum([math.log(next(X)) for _ in range(k)]) / alpha
@@ -97,7 +97,7 @@ def poisson(lamb, seed=42, mcl_a=69621, mcl_c=0, mcl_M=2**31 - 1):
     """
 
     X = mcl(mcl_a, seed, mcl_c, mcl_M)
-    skip(X, 2)
+    skip(X, 2)  # ignora os dois primeiros valores
 
     B = math.exp(-lamb)
 
@@ -116,7 +116,7 @@ def geometrica(p, seed=42, mcl_a=69621, mcl_c=0, mcl_M=2**31 - 1):
     """
 
     X = mcl(mcl_a, seed, mcl_c, mcl_M)
-    skip(X, 2)
+    skip(X, 2)  # ignora os dois primeiros valores
 
     while True:
         yield math.floor(math.log(next(X)) / math.log(1 - p))

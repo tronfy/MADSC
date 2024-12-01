@@ -1,9 +1,11 @@
 from simulacao import simular
 from utils import media, desvio_padrao, time_format
 
+# == executa uma única simulação ==
 
 clientes, (ts_med, tf_med, tsis_med, tof) = simular(seed=42)
 
+# == exibe os resultados ==
 
 header = "{:<4} | {} | {:<4} | {:<20} | {:<4} | {:<6} | {:<6} | {:<5} | {:<15} | {:<8}".format(
     "#", "T", "TEC", "TCR", "TS", "TIS", "TFS", "TF", "TSis", "TOF"
