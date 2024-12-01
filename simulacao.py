@@ -22,6 +22,14 @@ class Cliente:
         self.tsis = -1
 
 
+logs = []
+
+
+def log(msg):
+    print(msg)
+    logs.append(msg)
+
+
 def simular(seed, tempo_max=TEMPO_MAX):
     # gerador de números aleatórios para esta simulação
     U = uniforme(0, 1, seed)
@@ -118,8 +126,9 @@ def simular(seed, tempo_max=TEMPO_MAX):
     ts_med = media([c.ts for c in clientes])
     tf_med = media([c.tf for c in clientes])
     tsis_med = media([c.tsis for c in clientes])
+    tof_med = tof / NUM_CAIXAS
 
-    return clientes, (ts_med, tf_med, tsis_med, tof)
+    return clientes, (ts_med, tf_med, tsis_med, tof_med)
 
 
 if __name__ == "__main__":
@@ -134,12 +143,12 @@ if __name__ == "__main__":
 
     # == exibe resultados ==
 
-    print(
+    log(
         "{} caixas, {} simulações, tempo max {}:".format(
             NUM_CAIXAS, NUM_SIMS, TEMPO_MAX
         )
     )
-    print(
+    log(
         "{:>7} {:>8} | {:>8} | {:>8} {:<9} | {:>8}".format(
             " ", "TS", "TF", "TSis", "", "TOF"
         )
@@ -150,7 +159,7 @@ if __name__ == "__main__":
     tf_med = media([tf_med for _, (_, tf_med, _, _) in sims])
     tsis_med = media([tsis_med for _, (_, _, tsis_med, _) in sims])
     tof_med = media([tof_med for _, (_, _, _, tof_med) in sims])
-    print(
+    log(
         "{:<7} {:>8.2f} | {:>8.2f} | {:>8.2f} {:<9} | {:>8.2f}".format(
             "média:", ts_med, tf_med, tsis_med, time_format(tsis_med), tof_med
         )
@@ -161,7 +170,7 @@ if __name__ == "__main__":
     tf_dp = desvio_padrao([tf_med for _, (_, tf_med, _, _) in sims])
     tsis_dp = desvio_padrao([tsis_med for _, (_, _, tsis_med, _) in sims])
     tof_dp = desvio_padrao([tof_med for _, (_, _, _, tof_med) in sims])
-    print(
+    log(
         "{:<7} {:>8.2f} | {:>8.2f} | {:>8.2f} {:<9} | {:>8.2f}".format(
             "desvio:", ts_dp, tf_dp, tsis_dp, time_format(tsis_dp), tof_dp
         )
@@ -173,8 +182,13 @@ if __name__ == "__main__":
     tf_ic = t * tf_dp / math.sqrt(NUM_SIMS)
     tsis_ic = t * tsis_dp / math.sqrt(NUM_SIMS)
     tof_ic = t * tof_dp / math.sqrt(NUM_SIMS)
-    print(
+    log(
         "{:<7} {:>8.2f} | {:>8.2f} | {:>8.2f} {:<9} | {:>8.2f}".format(
             "IC:", ts_ic, tf_ic, tsis_ic, "", tof_ic
         )
     )
+
+    filename = f"resultados/{NUM_CAIXAS}caixas_{NUM_SIMS}sims_{TEMPO_MAX}s.log"
+    with open(filename, "w") as f:
+        f.write("\n".join(logs))
+        print(f"Resultados salvos no arquivo {filename}")
